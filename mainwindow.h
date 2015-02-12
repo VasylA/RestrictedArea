@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QGraphicsView>
 #include "gscene.h"
+#include "grectitem.h"
 
 namespace Ui {
 class MainWindow;
@@ -20,7 +21,6 @@ public:
 private:
     Ui::MainWindow *ui;
 
-    QGraphicsView *_view;
     GScene *_scene;
 
     QGraphicsRectItem *_allowedRect;
@@ -28,6 +28,8 @@ private:
     QGraphicsTextItem *_textItem;
     QGraphicsRectItem *_rectItem;
     QGraphicsEllipseItem *_circleItem;
+
+    QList<GRectItem*> _gItems;
 };
 
 #endif // MAINWINDOW_H

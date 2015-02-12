@@ -14,9 +14,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    gscene.cpp
+    gscene.cpp \
+    grectitem.cpp
 
 HEADERS  += mainwindow.h \
-    gscene.h
+    gscene.h \
+    grectitem.h
 
 FORMS    += mainwindow.ui

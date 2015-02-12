@@ -2,21 +2,41 @@
 #define GRECTITEM_H
 
 #include <QGraphicsItem>
+#include <QLinearGradient>
 
-class GRectItem : public QGraphicsRectItem
+class GRectItem : public QObject, public QGraphicsItem
 {
     Q_OBJECT
 public:
-    GRectItem();
+    explicit GRectItem(QGraphicsItem *parent = 0);
+    GRectItem(QRectF rect, QString name, QGraphicsItem *parent = 0);
+
+    inline QRectF area() const { return _area; }
+    void setArea(const QRectF &area);
+
+    inline QString name() const { return _name; }
+    void setName(const QString &name);
 
 protected:
-    QRect boundingRect();
+    QRectF boundingRect() const;
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
 
 signals:
 
 public slots:
+
+private:
+    void initStyle();
+
+    QLinearGradient SelectedFrame;
+    QLinearGradient SelectedBody;
+    QLinearGradient Frame;
+    QLinearGradient Body;
+    QColor          Text;
+
+    QRectF _area;
+    QString _name;
 
 };
 
