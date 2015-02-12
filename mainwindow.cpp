@@ -15,6 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
     this->setCentralWidget(_view);
 
     _scene = new GScene;
+    _scene->setSceneRect(QRect(-500, -300, 1000, 600));
     _view->setScene(_scene);
 
     _allowedRect = new QGraphicsRectItem(QRect(-500, -300, 1000, 600));
