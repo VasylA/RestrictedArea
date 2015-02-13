@@ -16,7 +16,26 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QGraphicsView" name="graphicsView"/>
+     <widget class="QGraphicsView" name="graphicsView">
+      <property name="backgroundBrush">
+       <brush brushstyle="SolidPattern">
+        <color alpha="255">
+         <red>45</red>
+         <green>45</green>
+         <blue>45</blue>
+        </color>
+       </brush>
+      </property>
+      <property name="dragMode">
+       <enum>QGraphicsView::RubberBandDrag</enum>
+      </property>
+      <property name="resizeAnchor">
+       <enum>QGraphicsView::AnchorViewCenter</enum>
+      </property>
+      <property name="rubberBandSelectionMode">
+       <enum>Qt::ContainsItemBoundingRect</enum>
+      </property>
+     </widget>
     </item>
    </layout>
   </widget>

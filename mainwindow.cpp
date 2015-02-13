@@ -11,31 +11,41 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    initSceneContent();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::initSceneContent()
+{
     _scene = new GScene;
     _scene->setSceneRect(QRect(-500, -300, 1000, 600));
     ui->graphicsView->setScene(_scene);
 
-    _allowedRect = new QGraphicsRectItem(QRect(-500, -300, 1000, 600));
-    _allowedRect->setPen(QPen(Qt::red, 5.0));
+    _allowedRect = new QGraphicsRectItem(_scene->allowedRect());
+    _allowedRect->setPen(QPen(Qt::red, 3.0));
     _scene->addItem(_allowedRect);
 
-    _textItem = new QGraphicsTextItem("Some text");
-    _textItem->setFont(QFont("Times", 15, QFont::Black) );
-    _textItem->setPos(0, 0);
-    _textItem->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
-    _scene->addItem(_textItem);
+//    _textItem = new QGraphicsTextItem("Some text");
+//    _textItem->setFont(QFont("Times", 15, QFont::Black) );
+//    _textItem->setPos(0, 0);
+//    _textItem->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
+//    _scene->addItem(_textItem);
 
-    _rectItem = new QGraphicsRectItem(QRect(200, -200, 70, 70));
-    _rectItem->setPen(QPen(Qt::black, 2.0));
-    _rectItem->setBrush(QBrush(Qt::blue));
-    _rectItem->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
-    _scene->addItem(_rectItem);
+//    _rectItem = new QGraphicsRectItem(QRect(200, -200, 70, 70));
+//    _rectItem->setPen(QPen(Qt::black, 2.0));
+//    _rectItem->setBrush(QBrush(Qt::blue));
+//    _rectItem->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
+//    _scene->addItem(_rectItem);
 
-    _circleItem = new QGraphicsEllipseItem(100, 100, 70, 70);
-    _circleItem->setPen(QPen(Qt::black, 2.0));
-    _circleItem->setBrush(QBrush(Qt::green));
-    _circleItem->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
-    _scene->addItem(_circleItem);
+//    _circleItem = new QGraphicsEllipseItem(100, 100, 70, 70);
+//    _circleItem->setPen(QPen(Qt::black, 2.0));
+//    _circleItem->setBrush(QBrush(Qt::green));
+//    _circleItem->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
+//    _scene->addItem(_circleItem);
 
     QRectF area(0, 0, 40, 20);
 
@@ -45,9 +55,4 @@ MainWindow::MainWindow(QWidget *parent) :
         _gItems.last()->setPos(-200, -400 + 100*i);
         _scene->addItem(_gItems.last());
     }
-}
-
-MainWindow::~MainWindow()
-{
-    delete ui;
 }

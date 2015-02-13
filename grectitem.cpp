@@ -5,8 +5,8 @@
 
 GRectItem::GRectItem(QGraphicsItem *parent) :
     QGraphicsItem(parent),
-    _area(QRectF()),
-    _name(QString())
+    _area(QRectF(0, 0, 30, 30)),
+    _name("Unknown")
 {
     initStyle();
 }
@@ -36,6 +36,56 @@ void GRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     painter->setPen(Text);
     painter->drawText(_area, _name, QTextOption(Qt::AlignCenter));
+}
+
+void GRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
+{
+    qDebug(__PRETTY_FUNCTION__);
+
+    setCursor(Qt::ClosedHandCursor);
+
+    QGraphicsItem::mousePressEvent(event);
+}
+
+void GRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+    qDebug(__PRETTY_FUNCTION__);
+
+    setCursor(Qt::OpenHandCursor);
+
+    QGraphicsItem::mouseReleaseEvent(event);
+}
+
+void GRectItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+    qDebug(__PRETTY_FUNCTION__);
+
+    QGraphicsItem::mouseDoubleClickEvent(event);
+}
+
+void GRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+//    qDebug(__PRETTY_FUNCTION__);
+
+    QGraphicsItem::mouseMoveEvent(event);
+}
+
+void GRectItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
+{
+    qDebug(__PRETTY_FUNCTION__);
+
+    setCursor(Qt::OpenHandCursor);
+
+    QGraphicsItem::hoverEnterEvent(event);
+}
+
+void GRectItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
+{
+    qDebug(__PRETTY_FUNCTION__);
+
+    setCursor(Qt::ArrowCursor);
+
+    QGraphicsItem::hoverLeaveEvent(event);
 }
 
 void GRectItem::initStyle()

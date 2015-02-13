@@ -19,6 +19,8 @@ public:
     ~MainWindow();
 
 private:
+    void initSceneContent();
+
     Ui::MainWindow *ui;
 
     GScene *_scene;

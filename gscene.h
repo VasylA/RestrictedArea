@@ -9,10 +9,24 @@ class GScene : public QGraphicsScene
 public:
     explicit GScene(QObject *parent = 0);
 
+    QRectF allowedRect() const;
+    void setAllowedRect(const QRectF &allowedRect);
+
+    void fitSceneRectToVisibleItems();
+
+protected:
+    void mousePressEvent(QGraphicsSceneMouseEvent *event);
+    void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
+    void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event);
+    void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+
 signals:
 
 public slots:
 
+private:
+    QRectF _allowedRect;
+    QPointF* _currentMousePosition;
 };
 
 #endif // GSCENE_H
