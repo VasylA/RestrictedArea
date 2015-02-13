@@ -7,6 +7,8 @@
 class GRectItem : public QObject, public QGraphicsItem
 {
     Q_OBJECT
+    Q_INTERFACES(QGraphicsItem)
+
 public:
     explicit GRectItem(QGraphicsItem *parent = 0);
     GRectItem(QRectF rect, QString name, QGraphicsItem *parent = 0);

@@ -6,7 +6,10 @@ GScene::GScene(QObject *parent) :
     QGraphicsScene(parent),
     _allowedRect(QRect(-800, -400, 1600, 800))
 {
-    _currentMousePosition = new QPointF;
+}
+
+GScene::~GScene()
+{
 }
 
 QRectF GScene::allowedRect() const
@@ -65,19 +68,47 @@ void GScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
             selectedItemsRect |= item->mapRectToScene(item->boundingRect() | item->childrenBoundingRect());
         }
 
-        QPointF prevMousePos = *_currentMousePosition;
+        QPointF prevMousePos = _lastMousePosition;
         QPointF newMousePos = event->scenePos();
 
         QPointF offset = newMousePos - prevMousePos;
 
-        if (!_allowedRect.contains(selectedItemsRect.translated(offset)) )
+        //Rectangle of selected items shifted at offset
+        QRectF translatedRect = selectedItemsRect.translated(offset);
+
+        if (!_allowedRect.contains(translatedRect) )
         {
+            qreal dx;
+            if (translatedRect.left() < _allowedRect.left())
+                dx = _allowedRect.left() - selectedItemsRect.left();
+            else
+                if (translatedRect.right() > _allowedRect.right())
+                    dx = _allowedRect.right() - selectedItemsRect.right();
+                else
+                    dx = offset.x();
+
+            qreal dy;
+            if (translatedRect.top() < _allowedRect.top())
+                dy = _allowedRect.top() - selectedItemsRect.top();
+            else
+                if (translatedRect.bottom() > _allowedRect.bottom())
+                    dy = _allowedRect.bottom() - selectedItemsRect.bottom();
+                else
+                    dy = offset.y();
+
+            foreach (QGraphicsItem* item, selectedElements)
+            {
+                item->moveBy(dx, dy);
+            }
+            selectedItemsRect.translate(dx, dy);
+
+            _lastMousePosition = _lastMousePosition + QPointF(dx, dy);
+
             return;
         }
     }
 
-    if (_currentMousePosition != NULL)
-        *_currentMousePosition = event->scenePos();
+    _lastMousePosition = event->scenePos();
 
     QGraphicsScene::mouseMoveEvent(event);
 }

@@ -8,6 +8,7 @@ class GScene : public QGraphicsScene
     Q_OBJECT
 public:
     explicit GScene(QObject *parent = 0);
+    ~GScene();
 
     QRectF allowedRect() const;
     void setAllowedRect(const QRectF &allowedRect);
@@ -26,7 +27,7 @@ public slots:
 
 private:
     QRectF _allowedRect;
-    QPointF* _currentMousePosition;
+    QPointF _lastMousePosition;
 };
 
 #endif // GSCENE_H
