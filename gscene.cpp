@@ -1,11 +1,16 @@
 #include "gscene.h"
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
+#include <QKeyEvent>
+#include "draggableitem.h"
 
 GScene::GScene(QObject *parent) :
     QGraphicsScene(parent),
-    _allowedRect(QRect(-800, -400, 1600, 800))
+    _allowedRect(QRect(-800, -400, 1600, 800)),
+    _selectedItemsRect(QRectF()),
+    _dragState(DS_NoDrag)
 {
+    connect(this, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
 }
 
 GScene::~GScene()
@@ -35,23 +40,85 @@ void GScene::fitSceneRectToVisibleItems()
 
 void GScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug(__PRETTY_FUNCTION__);
+//    qDebug(__PRETTY_FUNCTION__);
+    if(event)
+    {
+        if (_dragState == DS_NoDrag)
+        {
+            if ( (event->button() == Qt::LeftButton) && (itemAt(event->scenePos()) != NULL) )
+                _dragState = DS_CanDrag;
+        }
+        else
+        {
+            /* Check if is pressed more than one button by test
+             * if a event->buttons() have more than one bit set to 1 */
+            if (event->buttons() & (event->buttons() - 1))
+            {
+                /* Workaround to fix issue when left mouse button is pressed and selected items are
+                 * moving and another mouse button is pressed. After that movingItemsInitialPositions
+                 * field in QGraphicsScene class has previous value (before the moving).
+                 * As a result when we want to move selected items again they all change their
+                 * positions to positions before first moving.
+                 *
+                 * In generated mouse release event for graphics item that is under cursor while moving
+                 * movingItemsInitialPositions will be cleared and then will be reinitialize
+                 * in next mouse move event.
+                 *
+                 * Also we need call draggingStop() for every QGraphicsItem element selected before.*/
 
-    QGraphicsScene::mousePressEvent(event);
+                DraggableItem *grabberItem = dynamic_cast<DraggableItem*>(itemAt(event->scenePos()));
+                if (grabberItem != NULL)
+                    grabberItem->draggingStop();
+                foreach (QGraphicsItem *item, selectedItems())
+                {
+                    DraggableItem *draggableItem = dynamic_cast<DraggableItem*>(item);
+                    if (draggableItem != NULL)
+                        draggableItem->draggingStop();
+                }
+                _dragState = DS_NoDrag;
+            }
+        }
+        QGraphicsScene::mousePressEvent(event);
+    }
 }
 
 void GScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug(__PRETTY_FUNCTION__);
+//    qDebug(__PRETTY_FUNCTION__);
+
+    if (event == NULL)
+        return;
+
+    if (_dragState == DS_Drag)
+    {
+        DraggableItem *item = dynamic_cast<DraggableItem*>(itemAt(event->scenePos()));
+        if (item != NULL)
+            item->draggingStop();
+
+        QList<QGraphicsItem*> selectedElements = selectedItems();
+        for(int i = 0; i < selectedElements.count(); i++)
+        {
+            item = dynamic_cast<DraggableItem*>(selectedElements.at(i));
+            if (item != NULL)
+                item->draggingStop();
+        }
+        _selectedItemsRect = calculateSelectedItemsRect();
+    }
+    _dragState = DS_NoDrag;
 
     QGraphicsScene::mouseReleaseEvent(event);
-
     fitSceneRectToVisibleItems();
 }
 
 void GScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug(__PRETTY_FUNCTION__);
+//    qDebug(__PRETTY_FUNCTION__);
+
+    if (_dragState == DS_NoDrag)
+    {
+        if ( (event->button() == Qt::LeftButton) && (itemAt(event->scenePos()) != NULL) )
+            _dragState = DS_CanDrag;
+    }
 
     QGraphicsScene::mouseDoubleClickEvent(event);
 }
@@ -59,52 +126,37 @@ void GScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 void GScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
 //    qDebug(__PRETTY_FUNCTION__);
-    if (mouseGrabberItem() != NULL)
+
+    if (event == NULL)
+        return;
+
+    DraggableItem* grabberItem = dynamic_cast<DraggableItem*>(mouseGrabberItem());
+    if (grabberItem)
     {
-        QRectF selectedItemsRect;
-        QList<QGraphicsItem*> selectedElements = selectedItems();
-        foreach (QGraphicsItem* item, selectedElements)
+        if (_dragState == DS_CanDrag)
         {
-            selectedItemsRect |= item->mapRectToScene(item->boundingRect() | item->childrenBoundingRect());
+            _dragState = DS_Drag;
+
+            grabberItem->draggingStart();
+
+            QList<QGraphicsItem*> selectedElements = selectedItems();
+            for (int i = 0; i < selectedElements.count(); i++)
+            {
+                DraggableItem *item = dynamic_cast<DraggableItem*>(selectedElements.at(i));
+                if (item != NULL)
+                    item->draggingStart();
+            }
         }
 
-        QPointF prevMousePos = _lastMousePosition;
-        QPointF newMousePos = event->scenePos();
-
-        QPointF offset = newMousePos - prevMousePos;
-
-        //Rectangle of selected items shifted at offset
-        QRectF translatedRect = selectedItemsRect.translated(offset);
-
-        if (!_allowedRect.contains(translatedRect) )
+        if (_dragState != DS_NoDrag)
         {
-            qreal dx;
-            if (translatedRect.left() < _allowedRect.left())
-                dx = _allowedRect.left() - selectedItemsRect.left();
-            else
-                if (translatedRect.right() > _allowedRect.right())
-                    dx = _allowedRect.right() - selectedItemsRect.right();
-                else
-                    dx = offset.x();
+            QPointF prevMousePos = _lastMousePosition;
+            QPointF newMousePos = event->scenePos();
 
-            qreal dy;
-            if (translatedRect.top() < _allowedRect.top())
-                dy = _allowedRect.top() - selectedItemsRect.top();
-            else
-                if (translatedRect.bottom() > _allowedRect.bottom())
-                    dy = _allowedRect.bottom() - selectedItemsRect.bottom();
-                else
-                    dy = offset.y();
+            QPointF offset = newMousePos - prevMousePos;
 
-            foreach (QGraphicsItem* item, selectedElements)
-            {
-                item->moveBy(dx, dy);
-            }
-            selectedItemsRect.translate(dx, dy);
-
-            _lastMousePosition = _lastMousePosition + QPointF(dx, dy);
-
-            return;
+            if (!tryNaturalMoveByOffset(offset))
+                return;
         }
     }
 
@@ -112,4 +164,152 @@ void GScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
     QGraphicsScene::mouseMoveEvent(event);
 }
+
+void GScene::keyPressEvent(QKeyEvent *event)
+{
+    static const int x1 = 1;
+    static const int x10 = 10;
+    QPointF offset;
+    int x = - 1;
+
+    if ((event->modifiers() == Qt::AltModifier) ||
+        (event->modifiers() == (Qt::AltModifier | Qt::KeypadModifier)))
+            x = x1;
+    else if ((event->modifiers() == Qt::ControlModifier) ||
+            (event->modifiers() == (Qt::ControlModifier | Qt::KeypadModifier)))
+                x = x10;
+
+    if ( x >= 0 )
+    {
+        if ( event->key() == Qt::Key_Up )
+            offset = QPointF(0, -x);
+        else if ( event->key() == Qt::Key_Down )
+            offset = QPointF(0, x);
+        else if ( event->key() == Qt::Key_Left )
+            offset = QPointF(-x, 0);
+        else if ( event->key() == Qt::Key_Right )
+            offset = QPointF(x, 0);
+
+        if (!offset.isNull())
+        {
+            if (!_allowedRect.contains(_selectedItemsRect.translated(offset)))
+                return;
+
+            _selectedItemsRect.translate(offset);
+            QList<QGraphicsItem*> selectedElements = selectedItems();
+            foreach (QGraphicsItem *i, selectedElements)
+            {
+                if ( (i->parentItem() == NULL) )
+                    i->moveBy(offset.x(), offset.y());
+
+                if ( (i->parentItem() != NULL)
+                     && (!i->parentItem()->isSelected()) )
+                {
+                    QPointF itemTargetPos = i->pos();
+                    switch ((int)i->rotation())
+                    {
+                    case 0:
+                        itemTargetPos = i->pos() + offset;
+                        break;
+                    case -90:
+                        itemTargetPos = i->pos() + QPointF(offset.y(), -offset.x());
+                        break;
+                    case -180:
+                        itemTargetPos = i->pos() - offset;
+                        break;
+                    case -270:
+                        itemTargetPos = i->pos() - QPointF(offset.y(), -offset.x());
+                        break;
+                    default:
+                        itemTargetPos = i->pos() + offset;
+                        break;
+                    }
+                    i->setPos(itemTargetPos);
+                }
+            }
+            _dragState = DS_NoDrag;
+        }
+        return;
+    }
+    QGraphicsScene::keyPressEvent(event);
+}
+
+void GScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
+{
+//    qDebug(__PRETTY_FUNCTION__);
+
+    QGraphicsScene::contextMenuEvent(event);
+}
+
+void GScene::onSelectionChanged()
+{
+    _selectedItemsRect = calculateSelectedItemsRect();
+}
+
+QRectF GScene::calculateSelectedItemsRect()
+{
+    QList<QGraphicsItem*> selectedElements = selectedItems();
+    if (selectedElements.isEmpty())
+        return QRectF();
+
+    QRectF selectedItemsRect;
+    foreach (QGraphicsItem* item, selectedElements)
+    {
+        selectedItemsRect |= item->mapRectToScene(item->boundingRect() | item->childrenBoundingRect());
+    }
+    return selectedItemsRect;
+}
+
+/* Return true if selected items can be moved by offset.
+ * Otherwise calculate maximum offset for moving items,
+ * change selected items position and return false. */
+bool GScene::tryNaturalMoveByOffset(QPointF offset)
+{
+    _selectedItemsRect = calculateSelectedItemsRect();
+    //Rectangle of selected items shifted at offset
+    QRectF translatedRect = _selectedItemsRect.translated(offset);
+
+    if (_allowedRect.contains(translatedRect) )
+    {
+        _selectedItemsRect.translate(offset);
+        return true;
+    }
+
+    qreal dx;   //Allowed distance for moving selected items in horizontal direction
+    if (translatedRect.left() < _allowedRect.left())
+        dx = _allowedRect.left() - _selectedItemsRect.left();
+    else
+        if (translatedRect.right() > _allowedRect.right())
+            dx = _allowedRect.right() - _selectedItemsRect.right();
+        else
+            dx = offset.x();
+
+    qreal dy;   //Allowed distance for moving selected items in vertical direction
+    if (translatedRect.top() < _allowedRect.top())
+        dy = _allowedRect.top() - _selectedItemsRect.top();
+    else
+        if (translatedRect.bottom() > _allowedRect.bottom())
+            dy = _allowedRect.bottom() - _selectedItemsRect.bottom();
+        else
+            dy = offset.y();
+
+    if ( (dx != 0) || (dy != 0) )
+    {
+        QList<QGraphicsItem*> selectedElements = selectedItems();
+        foreach (QGraphicsItem* item, selectedElements)
+        {
+            /* Extra position changing only for items on scene without parents
+             * (position of child items will be changed automaticaly with
+             * position of parent items)*/
+            if (item->parentItem() == NULL)
+                item->moveBy(dx, dy);
+        }
+
+        _lastMousePosition = _lastMousePosition + QPointF(dx, dy);
+        _selectedItemsRect.translate(dx, dy);
+    }
+    return false;
+}
+
+
 

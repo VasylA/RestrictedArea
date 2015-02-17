@@ -3,8 +3,9 @@
 
 #include <QGraphicsItem>
 #include <QLinearGradient>
+#include "draggableitem.h"
 
-class GRectItem : public QObject, public QGraphicsItem
+class GRectItem : public QObject, public QGraphicsItem, public DraggableItem
 {
     Q_OBJECT
     Q_INTERFACES(QGraphicsItem)
@@ -19,15 +20,21 @@ public:
     inline QString name() const { return _name; }
     void setName(const QString &name);
 
+    void draggingStart();
+    void draggingStop();
+
 protected:
     QRectF boundingRect() const;
-
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget);
+
+    QVariant itemChange(GraphicsItemChange change, const QVariant &value);
 
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
     void mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event);
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event);
+
+    void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
 
     void hoverEnterEvent(QGraphicsSceneHoverEvent *event);
     void hoverLeaveEvent(QGraphicsSceneHoverEvent *event);
@@ -47,6 +54,7 @@ private:
 
     QRectF _area;
     QString _name;
+    qreal _zValue;
 
 };
 

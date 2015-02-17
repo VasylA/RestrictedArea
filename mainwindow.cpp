@@ -52,7 +52,11 @@ void MainWindow::initSceneContent()
     for (int i = 2; i < 7; ++i)
     {
         _gItems << new GRectItem(area, QString("PIN %0").arg(i));
-        _gItems.last()->setPos(-200, -400 + 100*i);
+        _gItems.last()->setPos(-300, -400 + 100*i);
+        _scene->addItem(_gItems.last());
+
+        _gItems << new GRectItem(area, QString("PIN %0").arg(18 - i));
+        _gItems.last()->setPos(300, -400 + 100*i);
         _scene->addItem(_gItems.last());
     }
 }

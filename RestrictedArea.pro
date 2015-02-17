@@ -15,10 +15,12 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     gscene.cpp \
-    grectitem.cpp
+    grectitem.cpp \
+    draggableitem.cpp
 
 HEADERS  += mainwindow.h \
     gscene.h \
-    grectitem.h
+    grectitem.h \
+    draggableitem.h
 
 FORMS    += mainwindow.ui
