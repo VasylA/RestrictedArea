@@ -46,6 +46,8 @@ private:
 
     QRectF calculateSelectedItemsRect();
     bool tryNaturalMoveByOffset(QPointF offset);
+
+    void restoreItems();
 };
 
 #endif // GSCENE_H

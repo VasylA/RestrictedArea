@@ -25,8 +25,6 @@ private:
 
     GScene *_scene;
 
-    QGraphicsRectItem *_allowedRect;
-
     QGraphicsTextItem *_textItem;
     QGraphicsRectItem *_rectItem;
     QGraphicsEllipseItem *_circleItem;

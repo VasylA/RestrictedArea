@@ -2,7 +2,10 @@
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QKeyEvent>
+#include <QMenu>
 #include "draggableitem.h"
+
+#include <QDebug>
 
 GScene::GScene(QObject *parent) :
     QGraphicsScene(parent),
@@ -11,6 +14,8 @@ GScene::GScene(QObject *parent) :
     _dragState(DS_NoDrag)
 {
     connect(this, SIGNAL(selectionChanged()), this, SLOT(onSelectionChanged()));
+
+    qDebug() << __PRETTY_FUNCTION__ << " DS_NoDrag";
 }
 
 GScene::~GScene()
@@ -40,51 +45,31 @@ void GScene::fitSceneRectToVisibleItems()
 
 void GScene::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
+
     if(event)
     {
-        if (_dragState == DS_NoDrag)
+        if ( (mouseGrabberItem() != NULL) || (itemAt(event->scenePos()) != NULL) )
         {
-            if ( (event->button() == Qt::LeftButton) && (itemAt(event->scenePos()) != NULL) )
-                _dragState = DS_CanDrag;
-        }
-        else
-        {
-            /* Check if is pressed more than one button by test
-             * if a event->buttons() have more than one bit set to 1 */
-            if (event->buttons() & (event->buttons() - 1))
+            if ( (event->button() == Qt::LeftButton) && (_dragState == DS_NoDrag) )
             {
-                /* Workaround to fix issue when left mouse button is pressed and selected items are
-                 * moving and another mouse button is pressed. After that movingItemsInitialPositions
-                 * field in QGraphicsScene class has previous value (before the moving).
-                 * As a result when we want to move selected items again they all change their
-                 * positions to positions before first moving.
-                 *
-                 * In generated mouse release event for graphics item that is under cursor while moving
-                 * movingItemsInitialPositions will be cleared and then will be reinitialize
-                 * in next mouse move event.
-                 *
-                 * Also we need call draggingStop() for every QGraphicsItem element selected before.*/
-
-                DraggableItem *grabberItem = dynamic_cast<DraggableItem*>(itemAt(event->scenePos()));
-                if (grabberItem != NULL)
-                    grabberItem->draggingStop();
-                foreach (QGraphicsItem *item, selectedItems())
-                {
-                    DraggableItem *draggableItem = dynamic_cast<DraggableItem*>(item);
-                    if (draggableItem != NULL)
-                        draggableItem->draggingStop();
-                }
-                _dragState = DS_NoDrag;
+                _dragState = DS_CanDrag;
+                qDebug() << __PRETTY_FUNCTION__ << " DS_NoDrag > DS_CanDrag";
+            }
+            else
+            {
+                restoreItems();
+                return;
             }
         }
+
         QGraphicsScene::mousePressEvent(event);
     }
 }
 
 void GScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
 
     if (event == NULL)
         return;
@@ -104,7 +89,11 @@ void GScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
         }
         _selectedItemsRect = calculateSelectedItemsRect();
     }
-    _dragState = DS_NoDrag;
+    if (_dragState != DS_NoDrag)
+    {
+        _dragState = DS_NoDrag;
+        qDebug() << __PRETTY_FUNCTION__ << " ~        > DS_NoDrag";
+    }
 
     QGraphicsScene::mouseReleaseEvent(event);
     fitSceneRectToVisibleItems();
@@ -112,12 +101,15 @@ void GScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void GScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
 
     if (_dragState == DS_NoDrag)
     {
         if ( (event->button() == Qt::LeftButton) && (itemAt(event->scenePos()) != NULL) )
+        {
             _dragState = DS_CanDrag;
+            qDebug() << __PRETTY_FUNCTION__ << " DS_NoDrag > DS_CanDrag";
+        }
     }
 
     QGraphicsScene::mouseDoubleClickEvent(event);
@@ -133,9 +125,16 @@ void GScene::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     DraggableItem* grabberItem = dynamic_cast<DraggableItem*>(mouseGrabberItem());
     if (grabberItem)
     {
+        if (_dragState == DS_NoDrag)
+        {
+            qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+            return;
+        }
+
         if (_dragState == DS_CanDrag)
         {
             _dragState = DS_Drag;
+            qDebug() << __PRETTY_FUNCTION__ << " DS_CanDrag > DS_Drag";
 
             grabberItem->draggingStart();
 
@@ -228,6 +227,7 @@ void GScene::keyPressEvent(QKeyEvent *event)
                 }
             }
             _dragState = DS_NoDrag;
+            qDebug() << __PRETTY_FUNCTION__ << " ~DS_NoDrag > DS_NoDrag";
         }
         return;
     }
@@ -236,9 +236,38 @@ void GScene::keyPressEvent(QKeyEvent *event)
 
 void GScene::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
 
-    QGraphicsScene::contextMenuEvent(event);
+    QAction *someAction = new QAction("Some Scene Action", this);
+    QMenu* contextMenu = new QMenu;
+    contextMenu->addActions(QList<QAction*>() << someAction);
+
+    QPointF menuPos = event->scenePos();
+    if (!_allowedRect.contains(menuPos) )
+    {
+        restoreItems();
+        event->accept();
+        return;
+    }
+
+    QGraphicsItem *item = itemAt(menuPos);
+
+    if (item == NULL)
+    {
+        contextMenu->popup(event->screenPos());
+    }
+    else
+    {
+        if (_dragState != DS_Drag)
+        {
+            QGraphicsScene::contextMenuEvent(event);
+        }
+        else
+        {
+            restoreItems();
+            event->accept();
+        }
+    }
 }
 
 void GScene::onSelectionChanged()
@@ -311,5 +340,12 @@ bool GScene::tryNaturalMoveByOffset(QPointF offset)
     return false;
 }
 
-
-
+void GScene::restoreItems()
+{
+    foreach (QGraphicsItem *item, selectedItems())
+    {
+        DraggableItem *draggableItem = dynamic_cast<DraggableItem*>(item);
+        if (draggableItem != NULL)
+            draggableItem->draggingStop();
+    }
+}

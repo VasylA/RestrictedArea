@@ -4,6 +4,7 @@
 #include <QStyleOptionGraphicsItem>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
+#include <QMenu>
 
 #include <QDebug>
 
@@ -54,13 +55,13 @@ QVariant GRectItem::itemChange(QGraphicsItem::GraphicsItemChange change, const Q
 
 void GRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
 
-    if (_draggingState == IDS_Drag)
-    {
-        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
-        return;
-    }
+//    if (_draggingState == IDS_Drag)
+//    {
+//        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+//        return;
+//    }
 
     QGraphicsItem::mousePressEvent(event);
 
@@ -69,7 +70,7 @@ void GRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void GRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
 
     if (!scene())
         return;
@@ -100,13 +101,13 @@ void GRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void GRectItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
 
-    if (_draggingState == IDS_Drag)
-    {
-        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
-        return;
-    }
+//    if (_draggingState == IDS_Drag)
+//    {
+//        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+//        return;
+//    }
 
     QGraphicsItem::mouseDoubleClickEvent(event);
 
@@ -117,12 +118,11 @@ void GRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
 //    qDebug(__PRETTY_FUNCTION__);
 
-    if (_draggingState == IDS_NoDrag)
-    {
-        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
-        return;
-    }
-
+//    if (_draggingState == IDS_NoDrag)
+//    {
+//        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+//        return;
+//    }
 
     QGraphicsItem::mouseMoveEvent(event);
 
@@ -131,7 +131,7 @@ void GRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 void GRectItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 {
-//    qDebug(__PRETTY_FUNCTION__);
+    qDebug(__PRETTY_FUNCTION__);
 
     if (_draggingState == IDS_Drag)
     {
@@ -139,7 +139,12 @@ void GRectItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
         return;
     }
 
-    QGraphicsItem::contextMenuEvent(event);
+    QAction *someAction = new QAction("Some Item Action", this);
+    QMenu* contextMenu = new QMenu;
+    contextMenu->addActions(QList<QAction*>() << someAction);
+    contextMenu->popup(event->screenPos());
+
+//    QGraphicsItem::contextMenuEvent(event);
 }
 
 void GRectItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)

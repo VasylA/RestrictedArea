@@ -25,9 +25,13 @@ void MainWindow::initSceneContent()
     _scene->setSceneRect(QRect(-500, -300, 1000, 600));
     ui->graphicsView->setScene(_scene);
 
-    _allowedRect = new QGraphicsRectItem(_scene->allowedRect());
-    _allowedRect->setPen(QPen(Qt::red, 3.0));
-    _scene->addItem(_allowedRect);
+    QRectF rect = _scene->allowedRect();
+    QPen borderPen(Qt::red, 3.0);
+
+    _scene->addLine(QLineF(rect.topLeft(), rect.topRight()), borderPen);          //Top line
+    _scene->addLine(QLineF(rect.topRight(), rect.bottomRight()), borderPen);      //Right line
+    _scene->addLine(QLineF(rect.bottomRight(), rect.bottomLeft()), borderPen);    //Bottom line
+    _scene->addLine(QLineF(rect.bottomLeft(), rect.topLeft()), borderPen);        //Left line
 
 //    _textItem = new QGraphicsTextItem("Some text");
 //    _textItem->setFont(QFont("Times", 15, QFont::Black) );
