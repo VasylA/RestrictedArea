@@ -13,14 +13,21 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
+    mainwindow.cpp \
     gscene.cpp \
     grectitem.cpp \
-    draggableitem.cpp
+    draggableitem.cpp \
+    gview.cpp \
+    glabel.cpp
 
 HEADERS  += mainwindow.h \
     gscene.h \
     grectitem.h \
-    draggableitem.h
+    draggableitem.h \
+    gview.h \
+    glabel.h
 
 FORMS    += mainwindow.ui
+
+RESOURCES += \
+    icons.qrc

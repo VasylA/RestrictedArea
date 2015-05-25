@@ -11,7 +11,9 @@
 GRectItem::GRectItem(QGraphicsItem *parent) :
     QGraphicsItem(parent),
     _area(QRectF(0, 0, 30, 30)),
-    _name("Unknown")
+    _name("Unknown"),
+    _currentAngle(0),
+    _label(NULL)
 {
     initStyle();
 }
@@ -19,9 +21,17 @@ GRectItem::GRectItem(QGraphicsItem *parent) :
 GRectItem::GRectItem(QRectF rect, QString name, QGraphicsItem *parent) :
     QGraphicsItem(parent),
     _area(rect),
-    _name(name)
+    _name(name),
+    _currentAngle(0),
+    _label(NULL)
 {
     initStyle();
+}
+
+GRectItem::~GRectItem()
+{
+    if (_label != NULL)
+        delete _label;
 }
 
 QRectF GRectItem::boundingRect() const
@@ -48,6 +58,10 @@ QVariant GRectItem::itemChange(QGraphicsItem::GraphicsItemChange change, const Q
     if (change == ItemSelectedChange)
     {
         bool itemIsSelected = ((value == true) ? (true) : (false));
+
+        if (_draggingState == IDS_Drag)
+            draggingStop();
+
         _draggingState = ((itemIsSelected) ? (IDS_CanDrag) : (IDS_NoDrag));
     }
     return QGraphicsItem::itemChange(change, value);
@@ -55,13 +69,13 @@ QVariant GRectItem::itemChange(QGraphicsItem::GraphicsItemChange change, const Q
 
 void GRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug(__PRETTY_FUNCTION__);
+//    qDebug(__PRETTY_FUNCTION__);
 
-//    if (_draggingState == IDS_Drag)
-//    {
-//        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
-//        return;
-//    }
+    if (_draggingState == IDS_Drag)
+    {
+        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+        return;
+    }
 
     QGraphicsItem::mousePressEvent(event);
 
@@ -70,7 +84,7 @@ void GRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 
 void GRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug(__PRETTY_FUNCTION__);
+//    qDebug(__PRETTY_FUNCTION__);
 
     if (!scene())
         return;
@@ -101,13 +115,13 @@ void GRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 void GRectItem::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug(__PRETTY_FUNCTION__);
+//    qDebug(__PRETTY_FUNCTION__);
 
-//    if (_draggingState == IDS_Drag)
-//    {
-//        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
-//        return;
-//    }
+    if (_draggingState == IDS_Drag)
+    {
+        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+        return;
+    }
 
     QGraphicsItem::mouseDoubleClickEvent(event);
 
@@ -118,11 +132,11 @@ void GRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
 //    qDebug(__PRETTY_FUNCTION__);
 
-//    if (_draggingState == IDS_NoDrag)
-//    {
-//        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
-//        return;
-//    }
+    if (_draggingState == IDS_NoDrag)
+    {
+        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+        return;
+    }
 
     QGraphicsItem::mouseMoveEvent(event);
 
@@ -131,7 +145,7 @@ void GRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 
 void GRectItem::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
 {
-    qDebug(__PRETTY_FUNCTION__);
+//    qDebug(__PRETTY_FUNCTION__);
 
     if (_draggingState == IDS_Drag)
     {
@@ -190,6 +204,54 @@ void GRectItem::initStyle()
 void GRectItem::setName(const QString &name)
 {
     _name = name;
+}
+
+void GRectItem::setPhysicalRotation(double deltaAngle)
+{
+    _currentAngle += deltaAngle;
+
+    if (qAbs(_currentAngle) == 360)
+        _currentAngle = 0;
+
+    qreal x = _area.width() / 2.0;
+    qreal y = _area.height() / 2.0;
+
+    this->setTransform(QTransform().translate(x, y).rotate(_currentAngle).translate(-x, -y));
+}
+
+GLabel *GRectItem::label() const
+{
+    return _label;
+}
+
+void GRectItem::setLabel(GLabel *newLabel)
+{
+    const int vertOffset = 5;
+
+    newLabel->hide();
+    newLabel->setParentItem(this);
+
+    QRectF  parentRect = mapToParent( boundingRect() ).boundingRect();
+    QPointF labelSizeOffset( newLabel->boundingRect().width()/2,
+                             newLabel->boundingRect().height() );
+    QPointF aboveTopCenterPoint( parentRect.center().x(),parentRect.top() - vertOffset );
+    QPointF localCoordPoint( mapFromParent(aboveTopCenterPoint-labelSizeOffset) );
+    newLabel->setPos( localCoordPoint );
+
+    removeLabel();
+
+    _label = newLabel;
+    _label->show();
+}
+
+void GRectItem::removeLabel()
+{
+    if (_label != NULL)
+    {
+        _label->setParentItem(NULL);
+        delete _label;
+        _label = NULL;
+    }
 }
 
 void GRectItem::setArea(const QRectF &area)

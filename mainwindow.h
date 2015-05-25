@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QGraphicsView>
+#include "gview.h"
 #include "gscene.h"
 #include "grectitem.h"
 
@@ -25,9 +25,9 @@ private:
 
     GScene *_scene;
 
-    QGraphicsTextItem *_textItem;
-    QGraphicsRectItem *_rectItem;
-    QGraphicsEllipseItem *_circleItem;
+//    QGraphicsTextItem *_textItem;
+//    QGraphicsRectItem *_rectItem;
+//    QGraphicsEllipseItem *_circleItem;
 
     QList<GRectItem*> _gItems;
 };

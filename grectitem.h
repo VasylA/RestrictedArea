@@ -4,6 +4,7 @@
 #include <QGraphicsItem>
 #include <QLinearGradient>
 #include "draggableitem.h"
+#include "glabel.h"
 
 class GRectItem : public QObject, public QGraphicsItem, public DraggableItem
 {
@@ -13,12 +14,19 @@ class GRectItem : public QObject, public QGraphicsItem, public DraggableItem
 public:
     explicit GRectItem(QGraphicsItem *parent = 0);
     GRectItem(QRectF rect, QString name, QGraphicsItem *parent = 0);
+    ~GRectItem();
 
     inline QRectF area() const { return _area; }
     void setArea(const QRectF &area);
 
     inline QString name() const { return _name; }
     void setName(const QString &name);
+
+    void setPhysicalRotation(double deltaAngle);
+
+    GLabel* label() const;
+    void setLabel(GLabel *newLabel);
+    void removeLabel();
 
     void draggingStart();
     void draggingStop();
@@ -55,7 +63,8 @@ private:
     QRectF _area;
     QString _name;
     qreal _zValue;
-
+    double _currentAngle;
+    GLabel *_label;
 };
 
 #endif // GRECTITEM_H

@@ -6,6 +6,7 @@
 class GScene : public QGraphicsScene
 {
     Q_OBJECT
+
 public:
     enum DragState
     {
@@ -22,6 +23,15 @@ public:
 
     void fitSceneRectToVisibleItems();
 
+    bool dropOnFocusOut() const;
+    void setDropOnFocusOut(bool dropOnFocusOut);
+
+signals:
+
+public slots:
+    void rotateLeft();
+    void rotateRight();
+
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event);
@@ -30,10 +40,7 @@ protected:
     void keyPressEvent(QKeyEvent *event);
 
     void contextMenuEvent(QGraphicsSceneContextMenuEvent *event);
-
-signals:
-
-public slots:
+    void focusOutEvent(QFocusEvent *event);
 
 private slots:
     void onSelectionChanged();
@@ -43,11 +50,15 @@ private:
     QRectF _selectedItemsRect;
     QPointF _lastMousePosition;
     DragState _dragState;
+    QList<QGraphicsItem*> _lastSelectedElements;
+    bool _dropOnFocusOut;
 
+    void rotateSelected(double angle);
     QRectF calculateSelectedItemsRect();
     bool tryNaturalMoveByOffset(QPointF offset);
-
-    void restoreItems();
+    void startItemsDragging();
+    void stopItemsDragging();
+    void stopItemsDragging(QList<QGraphicsItem*> items);
 };
 
 #endif // GSCENE_H

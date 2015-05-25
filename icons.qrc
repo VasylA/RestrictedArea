@@ -1,1 +1,6 @@
-<RCC/>
+<RCC>
+    <qresource prefix="/rotate">
+        <file>rotate_anticlockwise.png</file>
+        <file>rotate_clockwise.png</file>
+    </qresource>
+</RCC>

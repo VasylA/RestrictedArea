@@ -1,48 +1,42 @@
-#include <GLabel.h>
-#include <ComponentLib.h>
-#include <QPalette>
+#include "glabel.h"
+
+#include <QPainter>
+#include <QStyleOptionGraphicsItem>
+#include <QGraphicsScene>
+#include <QGraphicsSceneMouseEvent>
 #include <QMenu>
-#include <QObject>
 
-GLabel::GLabel(QString text, QColor col, QColor bcol, GItem *parent)
-    : QGraphicsTextItem (parent),
-      parentGItem(0),
-      contextMenu(0),
-      removeLabel(0),
-      changeText(0),
-      attachToBlock(0),
-      detachFromBlock(0),
-      _wasSave(false),
-      sZVAL(40)
+#include "gscene.h"
+
+#include <QDebug>
+
+GLabel::GLabel(QString text, QColor col, QColor bcol, QGraphicsItem *parent)
+    : QGraphicsTextItem(parent),
+      _pen(Qt::NoPen),
+      _brush(bcol),
+      _selectedBrush(QColor(85, 85, 85, 190)),
+      _textColor(col),
+      _currentAngle(0),
+      _zValue(40)
 {
-    setFlags(ItemIsMovable | ItemIsSelectable | ItemIgnoresParentOpacity /*| ItemIsFocusable*/);
-
-    initActions();
-    contextMenu = initMenu();
-
-    setParentGItem(parent);
-
+    setFlags(ItemIsMovable | ItemIsSelectable | ItemIgnoresParentOpacity);
     setAcceptHoverEvents(true);
 
-    setText(text);
-    setTextColor(col);
-    setBackgroundColor(bcol);
-
-    QFont f = font();
-#ifdef Q_OS_MAC
-    f.setPixelSize(10);
-#else
-    f.setPixelSize(12);
-#endif
-    setFont(f);
+    setPlainText(text);
+    setDefaultTextColor(col);
 }
 
-GLabel::~GLabel()
+void GLabel::setPhysicalRotation(double deltaAngle)
 {
-    delete removeLabel;
-    delete changeText;
-    delete attachToBlock;
-    delete detachFromBlock;
+    _currentAngle += deltaAngle;
+
+    if (qAbs(_currentAngle) == 360)
+        _currentAngle = 0;
+
+    qreal x = boundingRect().width() / 2.0;
+    qreal y = boundingRect().height() / 2.0;
+
+    this->setTransform(QTransform().translate(x, y).rotate(_currentAngle).translate(-x, -y));
 }
 
 void GLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
@@ -54,8 +48,8 @@ void GLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     opt->palette.setColor(QPalette::WindowText,(Qt::white));
     opt->state &= ~QStyle::State_Selected;
 
-    painter->setPen(_labelStyle.pen());
-    painter->setBrush(QBrush(((isSelected()) ? (_labelStyle.selectedBrush()) : (_labelStyle.brush()))));
+    painter->setPen(_pen);
+    painter->setBrush(QBrush(((isSelected()) ? (_selectedBrush) : (_brush))));
 
     painter->drawRoundedRect(boundingRect(), 5, 5);
 
@@ -63,27 +57,11 @@ void GLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QW
     delete opt;
 }
 
-void GLabel::setParentGItem(GItem *p)
-{
-    parentGItem = p;
-    setParentItem(p);
-
-    attachToBlock->setVisible(parentItem() == NULL);
-    detachFromBlock->setVisible(parentItem() != NULL);
-}
-
-void GLabel::setText(QString txt)
-{
-    setPlainText(txt);
-    emit textChanged(txt);
-    //setTransformOriginPoint(boundingRect().center());
-}
-
 void GLabel::draggingStart()
 {
     if (_draggingState == IDS_CanDrag)
     {
-        sZVAL = zValue();
+        _zValue = zValue();
         setZValue(100);
 
         setOpacity(0.3);
@@ -95,82 +73,27 @@ void GLabel::draggingStop()
 {
     if (_draggingState == IDS_Drag)
     {
-        setZValue(sZVAL);
+        setZValue(_zValue);
         setOpacity(1);
 
         _draggingState = IDS_CanDrag;
     }
 }
 
-void GLabel::save()
+void GLabel::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    if (!_wasSave)
-    {
-        _savedStyle = _labelStyle;
-        _wasSave = true;
-    }
-}
+//    qDebug(__PRETTY_FUNCTION__);
 
-void GLabel::restore()
-{
-    if (_wasSave)
-    {
-        _labelStyle = _savedStyle;
-        setDefaultTextColor(_labelStyle.textColor());
-        update();
-        _wasSave = false;
-    }
-}
-
-void GLabel::setLabelStyle(const GLabelStyle &style)
-{
-    _labelStyle = style;
-    setDefaultTextColor(_labelStyle.textColor());
-    update();
-}
-
-void GLabel::setTextColor(QColor c)
-{
-    _labelStyle.setTextColor(c);
-    setDefaultTextColor(c);
-    emit textChanged(toPlainText());
-    update();
-}
-
-void GLabel::setBackgroundColor(QColor c)
-{
-    _labelStyle.setBrush(QBrush(c));
-    update();
-}
-
-void GLabel::setCenterPos(QPointF p)
-{
-    this->setPos(p.x()-boundingRect().center().x(),p.y()-boundingRect().center().y());
-}
-
-QColor GLabel::backgroundColor()const
-{
-    return _labelStyle.brush().color();
-}
-
-void GLabel::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
-{
-    if (_draggingState != IDS_Drag)
+    if (_draggingState == IDS_Drag)
         return;
 
-    if (event == NULL)
-        return;
-
-    QGraphicsTextItem::mouseMoveEvent(event);
-    if (cursor().shape() != Qt::ClosedHandCursor)
-        setCursor(Qt::ClosedHandCursor);
-
-    if (GItem::isModify != NULL)
-        *GItem::isModify = true;
+    QGraphicsTextItem::mousePressEvent(event);
+    setCursor(Qt::ClosedHandCursor);
 }
 
 void GLabel::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
+//    qDebug(__PRETTY_FUNCTION__);
     setCursor(Qt::OpenHandCursor);
 
     if (event && scene())
@@ -201,8 +124,32 @@ void GLabel::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     }
 }
 
+void GLabel::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
+{
+//    qDebug(__PRETTY_FUNCTION__);
+
+    QGraphicsTextItem::mouseDoubleClickEvent(event);
+}
+
+void GLabel::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
+{
+    //    qDebug(__PRETTY_FUNCTION__);
+
+    if (_draggingState != IDS_Drag)
+        return;
+
+    if (event == NULL)
+        return;
+
+    QGraphicsTextItem::mouseMoveEvent(event);
+    if (cursor().shape() != Qt::ClosedHandCursor)
+        setCursor(Qt::ClosedHandCursor);
+}
+
 void GLabel::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
-{    
+{
+//    qDebug(__PRETTY_FUNCTION__);
+
     QList<QGraphicsItem*> selectedItems = scene()->selectedItems();
     if ( (selectedItems.count() > 0) && (!isSelected()) )
     {
@@ -215,100 +162,33 @@ void GLabel::contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
     if (!isSelected())
         setSelected(true);
 
-    contextMenu->popup(event->screenPos());
-}
-
-QMenu* GLabel::initMenu()
-{
-    QMenu *m = new QMenu;
-
-    m->addActions(QList<QAction*>() << changeText << removeLabel);
-    m->addSeparator();
-    m->addActions(QList<QAction*>() << attachToBlock << detachFromBlock);
-
-    return m;
-}
-
-void GLabel::mousePressEvent(QGraphicsSceneMouseEvent *event)
-{
     if (_draggingState == IDS_Drag)
-        return;
-
-    QGraphicsTextItem::mousePressEvent(event);
-    setCursor(Qt::ClosedHandCursor);
-}
-
-void GLabel::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *event)
-{
-    QGraphicsTextItem::mouseDoubleClickEvent(event);
-    onChangeText();
-}
-
-void GLabel::onChangeText()
-{
-    if (GItem::isModify != NULL)
-        *GItem::isModify = true;
-    GItem::action_dummyAddLabel->trigger();
-}
-
-void GLabel::onAttachToBlock()
-{
-    GScene *gScene = dynamic_cast<GScene*>(scene());
-    if (gScene)
     {
-        if (gScene->selectedItems().count() != 2)
-        {
-            gScene->clearSelection();
-            setSelected(true);
-        }
-
-        if (GItem::isModify != NULL)
-            *GItem::isModify = true;
-        GItem::action_attachLabel->trigger();
+        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+        return;
     }
-}
 
-void GLabel::onDetachFromBlock()
-{
-    if (GItem::isModify != NULL)
-        *GItem::isModify = true;
-    GItem::action_detachLabel->trigger();
-}
-
-void GLabel::onRemoveLabel()
-{
-    if (GItem::isModify != NULL)
-        *GItem::isModify = true;
-    GItem::action_dummyCutLabel->trigger();
-}
-
-void GLabel::initActions()
-{
-    removeLabel = new QAction("Erase Label(s)", this);
-    removeLabel->setIcon(QIcon(":/new/icons/icons/1306760864_label_32 del.png") );
-    changeText = new QAction("Edit Label(s)", this);
-    changeText->setIcon(QIcon(":/new/icons/icons/1306760864_label_32.png") );
-    attachToBlock = new QAction("Attach Label", this);
-    detachFromBlock = new QAction("Detach Label(s)", this);
-
-    connect(removeLabel, SIGNAL(triggered()), this, SLOT(onRemoveLabel()));
-    connect(changeText, SIGNAL(triggered()), this, SLOT(onChangeText()));
-    connect(attachToBlock, SIGNAL(triggered()), this, SLOT(onAttachToBlock()));
-    connect(detachFromBlock, SIGNAL(triggered()), this, SLOT(onDetachFromBlock()));
+    QAction *someAction = new QAction("Some Label Action", this);
+    QMenu* contextMenu = new QMenu;
+    contextMenu->addActions(QList<QAction*>() << someAction);
+    contextMenu->popup(event->screenPos());
 }
 
 void GLabel::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
-    if (parentGItem != NULL)
-    {
-        parentGItem->hoverLeaveEvent(event);
-    }
+//    qDebug(__PRETTY_FUNCTION__);
+
+    QGraphicsItem::hoverEnterEvent(event);
+
     setCursor(Qt::OpenHandCursor);
 }
 
 void GLabel::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
-    Q_UNUSED(event)
+//    qDebug(__PRETTY_FUNCTION__);
+
+    QGraphicsItem::hoverLeaveEvent(event);
+
     setCursor(Qt::ArrowCursor);
 }
 

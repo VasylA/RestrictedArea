@@ -1,5 +1,4 @@
-#include "GView.h"
-#include "GUIStyleSheets/stylecompiler.h"
+#include "gview.h"
 
 #include <QWheelEvent>
 #include <QScrollBar>
@@ -57,7 +56,8 @@ void GView::setZoomPercentage(qreal per, bool centerOnCursor)
 
 void GView::init(bool useOGLbyOS)
 {
-    setFont(StyleCompiler::makeFontByPx("Tahoma", 11));
+    QFont font = QFont ("Tahoma", -1);
+    font.setPixelSize(11);
 #if defined(Q_OS_MAC)
     if(useOGLbyOS)
         setViewport(new QGLWidget(QGLFormat(QGL::SampleBuffers)));
