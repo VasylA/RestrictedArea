@@ -26,11 +26,16 @@ public:
     bool dropOnFocusOut() const;
     void setDropOnFocusOut(bool dropOnFocusOut);
 
+    static void rotateItemPhisicaly(QGraphicsItem *item, qreal deltaAngle);
+
 signals:
 
 public slots:
     void rotateLeft();
     void rotateRight();
+    void groupItems();
+    void ungroupItems();
+    void setCentralTranform();
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *event);
@@ -46,6 +51,8 @@ private slots:
     void onSelectionChanged();
 
 private:
+    QGraphicsRectItem *_groupItem;
+
     QRectF _allowedRect;
     QRectF _selectedItemsRect;
     QPointF _lastMousePosition;

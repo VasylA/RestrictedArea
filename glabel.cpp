@@ -16,7 +16,6 @@ GLabel::GLabel(QString text, QColor col, QColor bcol, QGraphicsItem *parent)
       _brush(bcol),
       _selectedBrush(QColor(85, 85, 85, 190)),
       _textColor(col),
-      _currentAngle(0),
       _zValue(40)
 {
     setFlags(ItemIsMovable | ItemIsSelectable | ItemIgnoresParentOpacity);
@@ -24,19 +23,26 @@ GLabel::GLabel(QString text, QColor col, QColor bcol, QGraphicsItem *parent)
 
     setPlainText(text);
     setDefaultTextColor(col);
+
+    setTransformOriginPoint(boundingRect().center());
 }
 
 void GLabel::setPhysicalRotation(double deltaAngle)
 {
-    _currentAngle += deltaAngle;
+    qDebug() << "Pos before rotation: " << pos();
 
-    if (qAbs(_currentAngle) == 360)
-        _currentAngle = 0;
+    qreal currentAngle = rotation();
+    currentAngle += deltaAngle;
 
-    qreal x = boundingRect().width() / 2.0;
-    qreal y = boundingRect().height() / 2.0;
+    while (currentAngle >= 360 )
+        currentAngle -= 360;
 
-    this->setTransform(QTransform().translate(x, y).rotate(_currentAngle).translate(-x, -y));
+    while (currentAngle <= 0 )
+        currentAngle += 360;
+
+    setRotation(currentAngle);
+
+    qDebug() << "Pos after rotation: " << pos();
 }
 
 void GLabel::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)

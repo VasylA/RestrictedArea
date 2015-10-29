@@ -40,7 +40,6 @@ private:
     QBrush _brush;
     QBrush _selectedBrush;
     QColor _textColor;
-    double _currentAngle;
     qreal _zValue;
 };
 

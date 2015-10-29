@@ -6,6 +6,19 @@
 #include "draggableitem.h"
 #include "glabel.h"
 
+class ItemParameters
+{
+public:
+    inline ItemParameters()
+    {
+        angel = 0;
+        isValid = false;
+    }
+    QPointF pos;
+    qreal angel;
+    bool isValid;
+};
+
 class GRectItem : public QObject, public QGraphicsItem, public DraggableItem
 {
     Q_OBJECT
@@ -22,6 +35,7 @@ public:
     inline QString name() const { return _name; }
     void setName(const QString &name);
 
+    qreal rotation() const;
     void setPhysicalRotation(double deltaAngle);
 
     GLabel* label() const;
@@ -30,6 +44,9 @@ public:
 
     void draggingStart();
     void draggingStop();
+
+    void cacheTransform();
+    void applyTransform();
 
 protected:
     QRectF boundingRect() const;
@@ -63,8 +80,9 @@ private:
     QRectF _area;
     QString _name;
     qreal _zValue;
-    double _currentAngle;
     GLabel *_label;
+
+    ItemParameters _parameters;
 };
 
 #endif // GRECTITEM_H

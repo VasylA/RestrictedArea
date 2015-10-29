@@ -24,11 +24,6 @@ private:
     Ui::MainWindow *ui;
 
     GScene *_scene;
-
-//    QGraphicsTextItem *_textItem;
-//    QGraphicsRectItem *_rectItem;
-//    QGraphicsEllipseItem *_circleItem;
-
     QList<GRectItem*> _gItems;
 };
 

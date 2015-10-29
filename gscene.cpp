@@ -11,6 +11,7 @@
 
 GScene::GScene(QObject *parent) :
     QGraphicsScene(parent),
+    _groupItem(NULL),
     _allowedRect(QRect(-1800, -1400, 3600, 2800)),
     _selectedItemsRect(QRectF()),
     _dragState(DS_NoDrag),
@@ -271,14 +272,18 @@ void GScene::rotateSelected(double angle)
             rectItem->setPhysicalRotation(angle);
             continue;
         }
-
-        GLabel *labelItem = dynamic_cast<GLabel*>(item);
-        if (labelItem != NULL)
+        else
         {
-            if (labelItem->parentItem() != NULL)
-                if (labelItem->parentItem()->isSelected())
-                    continue;
-            labelItem->setPhysicalRotation(angle);
+            GLabel *labelItem = dynamic_cast<GLabel*>(item);
+            if (labelItem != NULL)
+            {
+                if (labelItem->parentItem() != NULL)
+                    if (labelItem->parentItem()->isSelected())
+                        continue;
+                labelItem->setPhysicalRotation(angle);
+            }
+            else
+                rotateItemPhisicaly(item, angle);
         }
     }
 }
@@ -293,14 +298,101 @@ void GScene::setDropOnFocusOut(bool dropOnFocusOut)
     _dropOnFocusOut = dropOnFocusOut;
 }
 
+void GScene::rotateItemPhisicaly(QGraphicsItem *item, qreal deltaAngle)
+{
+    item->setTransformOriginPoint(item->boundingRect().center());
+
+    qreal currentAngle = item->rotation();
+    currentAngle += deltaAngle;
+
+    while (currentAngle >= 360 )
+        currentAngle -= 360;
+
+    while (currentAngle <= 0 )
+        currentAngle += 360;
+
+    item->setRotation(currentAngle);
+}
+
 void GScene::rotateLeft()
 {
-    rotateSelected(-15);
+    rotateSelected(-90);
 }
 
 void GScene::rotateRight()
 {
-    rotateSelected(15);
+    rotateSelected(90);
+}
+
+void GScene::groupItems()
+{
+    QRectF itemsRect = calculateSelectedItemsRect();
+
+    ungroupItems();
+
+    QList<QGraphicsItem*> selected = selectedItems();
+    if (selected.empty())
+        return;
+
+    qreal minZValue = 0;
+
+    _groupItem = new QGraphicsRectItem(itemsRect.adjusted(-20, -20, 20, 20));
+    _groupItem->setPen(QPen(Qt::black, 2.0));
+    _groupItem->setBrush(QBrush(Qt::blue));
+    _groupItem->setFlags(QGraphicsItem::ItemIsSelectable | QGraphicsItem::ItemIsMovable);
+
+    foreach (QGraphicsItem* item, selected)
+    {
+        item->setParentItem(_groupItem);
+        if (minZValue > item->zValue())
+            minZValue = item->zValue();
+        item->setSelected(false);
+        item->setTransformOriginPoint(item->boundingRect().topLeft());
+    }
+
+    _groupItem->setZValue(minZValue - 20);
+    _groupItem->setSelected(true);
+    addItem(_groupItem);
+}
+
+void GScene::ungroupItems()
+{
+    if (_groupItem)
+    {
+        QList<QGraphicsItem*> grouped = _groupItem->children();
+        foreach (QGraphicsItem* item, grouped)
+        {
+            GRectItem *gRectItem = dynamic_cast<GRectItem*>(item);
+            if (gRectItem != NULL)
+            {
+                gRectItem->cacheTransform();
+                gRectItem->setParentItem(NULL);
+                gRectItem->applyTransform();
+            }
+            else
+            {
+                item->setParentItem(NULL);
+            }
+            item->setSelected(true);
+            item->setTransformOriginPoint(item->boundingRect().topLeft());
+        }
+
+        delete _groupItem;
+        _groupItem = NULL;
+
+//        foreach (QGraphicsItem* item, grouped)
+//            item->setTransformOriginPoint(item->boundingRect().center());
+    }
+}
+
+void GScene::setCentralTranform()
+{
+    QList<QGraphicsItem*> selected = selectedItems();
+    if (selected.empty())
+        return;
+
+//    foreach (QGraphicsItem* item, selected)
+//        item->setTransformOriginPoint(item->boundingRect().center());
 }
 
 QRectF GScene::calculateSelectedItemsRect()

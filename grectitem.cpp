@@ -5,6 +5,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QMenu>
+#include <qmath.h>
 
 #include <QDebug>
 
@@ -12,20 +13,22 @@ GRectItem::GRectItem(QGraphicsItem *parent) :
     QGraphicsItem(parent),
     _area(QRectF(0, 0, 30, 30)),
     _name("Unknown"),
-    _currentAngle(0),
     _label(NULL)
 {
     initStyle();
+
+    setTransformOriginPoint(boundingRect().center());
 }
 
 GRectItem::GRectItem(QRectF rect, QString name, QGraphicsItem *parent) :
     QGraphicsItem(parent),
     _area(rect),
     _name(name),
-    _currentAngle(0),
     _label(NULL)
 {
     initStyle();
+
+    setTransformOriginPoint(boundingRect().center());
 }
 
 GRectItem::~GRectItem()
@@ -51,6 +54,14 @@ void GRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
     painter->setPen(Text);
     painter->drawText(_area, _name, QTextOption(Qt::AlignCenter));
+
+//    painter->save();
+//    painter->setPen(Qt::red);
+//    painter->setBrush(QBrush(Qt::red));
+//    painter->drawEllipse(QPointF(0, 0), 5, 5);
+//    painter->drawEllipse(mapFromScene(scenePos()), 5, 5);
+//    painter->drawEllipse(mapFromParent(pos()), 5, 5);
+//    painter->restore();
 }
 
 QVariant GRectItem::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value)
@@ -92,6 +103,7 @@ void GRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
     QList<QGraphicsItem*> selectedItemsBefore = scene()->selectedItems();
     bool wasSelected = isSelected();
 
+    qDebug(__PRETTY_FUNCTION__);
     QGraphicsItem::mouseReleaseEvent(event);
 
     setCursor(Qt::OpenHandCursor);
@@ -206,17 +218,39 @@ void GRectItem::setName(const QString &name)
     _name = name;
 }
 
+qreal GRectItem::rotation() const
+{
+    if (parentItem())
+    {
+        QTransform tr = sceneTransform();
+        qreal angel = atan2(tr.m12(), tr.m11());
+        qreal angelDegree = (qreal)qRound(180 / M_PI * angel);
+        if (angelDegree < 0)
+            angelDegree += 360;
+        return angelDegree;
+    }
+    return QGraphicsItem::rotation();
+
+}
+
 void GRectItem::setPhysicalRotation(double deltaAngle)
 {
-    _currentAngle += deltaAngle;
+    qDebug() << "Pos before rotation: " << pos();
 
-    if (qAbs(_currentAngle) == 360)
-        _currentAngle = 0;
+    setTransformOriginPoint(boundingRect().center());
 
-    qreal x = _area.width() / 2.0;
-    qreal y = _area.height() / 2.0;
+    qreal currentAngle = rotation();
+    currentAngle += deltaAngle;
 
-    this->setTransform(QTransform().translate(x, y).rotate(_currentAngle).translate(-x, -y));
+    while (currentAngle >= 360 )
+        currentAngle -= 360;
+
+    while (currentAngle <= 0 )
+        currentAngle += 360;
+
+    setRotation(currentAngle);
+
+    qDebug() << "Pos after rotation: " << pos();
 }
 
 GLabel *GRectItem::label() const
@@ -270,6 +304,10 @@ void GRectItem::draggingStart()
 //        setAcceptedMouseButtons(Qt::LeftButton);
         _draggingState = IDS_Drag;
     }
+    else
+    {
+        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+    }
 }
 
 void GRectItem::draggingStop()
@@ -281,5 +319,26 @@ void GRectItem::draggingStop()
 
 //        setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton);
         _draggingState = IDS_CanDrag;
+    }
+    else
+    {
+        qDebug() << __PRETTY_FUNCTION__ << " Shit happened!";
+    }
+}
+
+void GRectItem::cacheTransform()
+{
+    _parameters.isValid = true;
+    _parameters.pos = scenePos();
+    _parameters.angel = rotation();
+}
+
+void GRectItem::applyTransform()
+{
+    if (_parameters.isValid)
+    {
+        _parameters.isValid = false;
+        setPos(_parameters.pos);
+        setRotation(_parameters.angel);
     }
 }
